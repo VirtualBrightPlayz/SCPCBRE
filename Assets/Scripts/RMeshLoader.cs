@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -7,22 +7,8 @@ using UnityEngine;
 
 public class RMeshLoader : MonoBehaviour
 {
-    public string filename;
-
-    void Start()
-    {
-        RMeshData data = LoadRMesh(filename);
-        GetComponent<MeshRenderer>().sharedMaterials = data.visibleData.materials;
-        GetComponent<MeshFilter>().sharedMesh = data.visibleData.mesh;
-        GetComponent<MeshCollider>().sharedMesh = data.collisionMesh;
-        for (int i = 0; i < data.triggerBoxes.Length; i++)
-        {
-            GameObject go = new GameObject(data.triggerBoxes[i].name);
-            MeshCollider triggerCollider = go.AddComponent<MeshCollider>();
-            triggerCollider.sharedMesh = data.triggerBoxes[i].mesh;
-            go.transform.SetParent(transform);
-        }
-    }
+    public const float Scale = 0.01f;
+    public const int MaxRoomEmitters = 8;
 
     public static RMeshData LoadRMesh(string filename)
     {
@@ -220,7 +206,8 @@ public class RMeshLoader : MonoBehaviour
                 }
             }
 
-            RMeshData final = new RMeshData();
+            GameObject go = new GameObject(Path.GetFileNameWithoutExtension(filename));
+            RMeshData final = go.AddComponent<RMeshData>();
             final.visibleData = new MeshData(mesh, materials.ToArray());
             final.invisibleMesh = invisMesh;
             final.triggerBoxes = boxes.ToArray();
@@ -241,6 +228,170 @@ public class RMeshLoader : MonoBehaviour
             });
             final.collisionMesh.CombineMeshes(combines.ToArray(), false, true, false);
 
+            // entities
+            List<GameObject> entities = new List<GameObject>();
+            count = ReadInt(stream);
+            for (int i = 0; i < count; i++)
+            {
+                string temp1s = ReadString(stream);
+                switch (temp1s)
+                {
+                    case "screen":
+                    {
+                        float temp1 = ReadFloat(stream);
+                        float temp2 = ReadFloat(stream);
+                        float temp3 = ReadFloat(stream);
+
+                        string temp2s = ReadString(stream);
+                        
+                        GameObject screenGo = new GameObject(temp1s);
+                        screenGo.transform.SetParent(final.transform);
+                        screenGo.transform.localPosition = new Vector3(temp1, temp2, temp3);
+                        ScreenEntity scr = screenGo.AddComponent<ScreenEntity>();
+                        scr.imgpath = temp2s;
+                        scr.room = final;
+                    }
+                    break;
+                    case "waypoint":
+                    {
+                        float temp1 = ReadFloat(stream);
+                        float temp2 = ReadFloat(stream);
+                        float temp3 = ReadFloat(stream);
+
+                        GameObject entGo = new GameObject(temp1s);
+                        entGo.transform.SetParent(final.transform);
+                        entGo.transform.localPosition = new Vector3(temp1, temp2, temp3);
+                    }
+                    break;
+                    case "light":
+                    {
+                        float temp1 = ReadFloat(stream);
+                        float temp2 = ReadFloat(stream);
+                        float temp3 = ReadFloat(stream);
+
+                        GameObject entGo = new GameObject(temp1s);
+                        entGo.transform.SetParent(final.transform);
+                        entGo.transform.localPosition = new Vector3(temp1, temp2, temp3);
+                        LightEntity li = entGo.AddComponent<LightEntity>();
+                        li.type = LightType.Point;
+                        li.range = ReadFloat(stream);
+                        string[] strColor = ReadString(stream).Split(' ');
+                        li.intensity = ReadFloat(stream);
+                        // we use floats to get HDR rendering
+                        float r = int.Parse(strColor[0]) / 255f;
+                        float g = int.Parse(strColor[1]) / 255f;
+                        float b = int.Parse(strColor[2]) / 255f;
+                        li.color = new Color(r, g, b, 1f);
+                        li.RefreshData();
+
+                        if (entGo.transform.localPosition == Vector3.zero)
+                        {
+                            entGo.SetActive(false);
+                        }
+                    }
+                    break;
+                    case "spotlight":
+                    {
+                        float temp1 = ReadFloat(stream);
+                        float temp2 = ReadFloat(stream);
+                        float temp3 = ReadFloat(stream);
+
+                        GameObject entGo = new GameObject(temp1s);
+                        entGo.transform.SetParent(final.transform);
+                        entGo.transform.localPosition = new Vector3(temp1, temp2, temp3);
+                        LightEntity li = entGo.AddComponent<LightEntity>();
+                        li.type = LightType.Spot;
+                        li.range = ReadFloat(stream);
+                        string[] strColor = ReadString(stream).Split(' ');
+                        li.intensity = ReadFloat(stream);
+                        // we use floats to get HDR rendering
+                        float r = int.Parse(strColor[0]) / 255f;
+                        float g = int.Parse(strColor[1]) / 255f;
+                        float b = int.Parse(strColor[2]) / 255f;
+                        li.color = new Color(r, g, b, 1f);
+                        string[] strAng = ReadString(stream).Split(' ');
+                        float pitch = float.Parse(strAng[0]);
+                        float yaw = float.Parse(strAng[1]);
+                        entGo.transform.localEulerAngles = new Vector3(pitch, yaw, 0f);
+
+                        li.innerSpotAngle = ReadInt(stream);
+                        li.spotAngle = ReadInt(stream);
+
+                        if (entGo.transform.localPosition == Vector3.zero)
+                        {
+                            entGo.SetActive(false);
+                        }
+                    }
+                    break;
+                    case "soundemitter":
+                    {
+                        float temp1 = ReadFloat(stream);
+                        float temp2 = ReadFloat(stream);
+                        float temp3 = ReadFloat(stream);
+
+                        GameObject entGo = new GameObject(temp1s);
+                        entGo.transform.SetParent(final.transform);
+                        entGo.transform.localPosition = new Vector3(temp1, temp2, temp3);
+                        SoundEntity se = entGo.AddComponent<SoundEntity>();
+                        se.soundId = ReadInt(stream);
+                        se.range = ReadFloat(stream) * 2f;
+                        se.RefreshData();
+
+                        if (entGo.transform.localPosition == Vector3.zero)
+                        {
+                            entGo.SetActive(false);
+                        }
+                    }
+                    break;
+                    case "playerstart":
+                    {
+                        float temp1 = ReadFloat(stream);
+                        float temp2 = ReadFloat(stream);
+                        float temp3 = ReadFloat(stream);
+
+                        GameObject entGo = new GameObject(temp1s);
+                        entGo.transform.SetParent(final.transform);
+                        entGo.transform.localPosition = new Vector3(temp1, temp2, temp3);
+                        string[] strAng = ReadString(stream).Split(' ');
+                        float pitch = float.Parse(strAng[0]);
+                        float yaw = float.Parse(strAng[1]);
+                        float roll = float.Parse(strAng[2]);
+                        entGo.transform.localEulerAngles = new Vector3(pitch, yaw, roll);
+
+                        if (entGo.transform.localPosition == Vector3.zero)
+                        {
+                            entGo.SetActive(false);
+                        }
+                    }
+                    break;
+                    case "model": // TODO
+                    {
+                        ReadString(stream);
+                        //
+                        ReadFloat(stream);
+                        ReadFloat(stream);
+                        ReadFloat(stream);
+                        //
+                        ReadFloat(stream);
+                        ReadFloat(stream);
+                        ReadFloat(stream);
+                        //
+                        ReadFloat(stream);
+                        ReadFloat(stream);
+                        ReadFloat(stream);
+                    }
+                    break;
+                    default:
+                    {
+                        GameObject nullgo = new GameObject(temp1s);
+                        nullgo.transform.SetParent(final.transform);
+                    }
+                    break;
+                }
+            }
+            final.entities = entities.ToArray();
+
+            final.RefreshData();
             return final;
         }
     }
@@ -255,27 +406,9 @@ public class RMeshLoader : MonoBehaviour
         return mat;
     }
 
-    public static string GetFileNameIgnoreCase(string filename)
-    {
-        if (File.Exists(filename))
-        {
-            return filename;
-        }
-        string file = Path.GetFileName(filename);
-        string dir = Path.GetDirectoryName(filename);
-        foreach (string item in Directory.GetFiles(dir))
-        {
-            if (Path.GetFileName(item).ToLower() == file.ToLower())
-            {
-                return Path.Combine(dir, item);
-            }
-        }
-        return filename;
-    }
-
     public static Texture2D LoadTexture(string path)
     {
-        path = GetFileNameIgnoreCase(path);
+        path = GameData.GetFileNameIgnoreCase(path);
         if (File.Exists(path))
         {
             Texture2D tex = new Texture2D(1, 1);
@@ -289,11 +422,11 @@ public class RMeshLoader : MonoBehaviour
 
     public static Texture2D LoadTextureBump(string path)
     {
-        path = GetFileNameIgnoreCase(path);
+        path = GameData.GetFileNameIgnoreCase(path);
         if (GameData.instance.bumpMaterials.ContainsKey(Path.GetFileName(path)))
         {
             string pathbump = Path.Combine(GameData.instance.gameDir, GameData.instance.bumpMaterials[Path.GetFileName(path)]);
-            pathbump = GetFileNameIgnoreCase(pathbump);
+            pathbump = GameData.GetFileNameIgnoreCase(pathbump);
             if (File.Exists(pathbump))
             {
                 Texture2D tex = new Texture2D(1, 1);

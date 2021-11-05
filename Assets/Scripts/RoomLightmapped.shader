@@ -57,18 +57,17 @@
 
         void surf (Input IN, inout SurfaceOutputStandard o)
         {
-            // Albedo comes from a texture tinted by color
             fixed3 n = UnpackNormal(tex2D(_BumpMap, IN.uv_BumpMap));
             IN.tangentViewDir = normalize(IN.tangentViewDir);
-            float height = n.z * 0.01;
+            float height = n.z * -0.01;
             IN.uv_MainTex.xy += IN.tangentViewDir.xy * height;
             fixed4 c = tex2D(_MainTex, IN.uv_MainTex) * _Color;
             o.Albedo = c.rgb;
-            // Metallic and smoothness come from slider variables
             o.Metallic = _Metallic;
             o.Smoothness = _Glossiness;
             o.Alpha = c.a;
-            o.Normal = n;
+            o.Normal = fixed3(0, 0, 1);
+            // o.Normal = n;
             fixed4 lm = tex2D(_AltTex, IN.uv2_AltTex);
             o.Emission = lm.rgb * c.rgb;
         }
