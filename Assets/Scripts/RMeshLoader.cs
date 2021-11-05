@@ -15,6 +15,13 @@ public class RMeshLoader : MonoBehaviour
         GetComponent<MeshRenderer>().sharedMaterials = data.visibleData.materials;
         GetComponent<MeshFilter>().sharedMesh = data.visibleData.mesh;
         GetComponent<MeshCollider>().sharedMesh = data.collisionMesh;
+        for (int i = 0; i < data.triggerBoxes.Length; i++)
+        {
+            GameObject go = new GameObject(data.triggerBoxes[i].name);
+            MeshCollider triggerCollider = go.AddComponent<MeshCollider>();
+            triggerCollider.sharedMesh = data.triggerBoxes[i].mesh;
+            go.transform.SetParent(transform);
+        }
     }
 
     public static RMeshData LoadRMesh(string filename)
@@ -159,9 +166,64 @@ public class RMeshLoader : MonoBehaviour
             invisMesh.CombineMeshes(combines.ToArray(), false, true, false);
             combines.Clear();
 
+            // trigger box
+            List<RMTriggerBox> boxes = new List<RMTriggerBox>();
+            if (hasTriggerBox)
+            {
+                count = ReadInt(stream);
+                for (int i = 0; i < count; i++)
+                {
+                    int count2 = ReadInt(stream);
+                    for (int j = 0; j < count2; j++)
+                    {
+                        // vertices
+                        int count3 = ReadInt(stream);
+                        Vector3[] vertices = new Vector3[count3];
+                        for (int k = 0; k < count3; k++)
+                        {
+                            // world coords
+                            float x = ReadFloat(stream);
+                            float y = ReadFloat(stream);
+                            float z = ReadFloat(stream);
+                            vertices[j] = new Vector3(x, y, z);
+                        }
+
+                        // tris
+                        count3 = ReadInt(stream);
+                        int[] tris = new int[count3 * 3];
+
+                        for (int k = 0; k < count3; k++)
+                        {
+                            tris[j * 3] = ReadInt(stream);
+                            tris[j * 3 + 1] = ReadInt(stream);
+                            tris[j * 3 + 2] = ReadInt(stream);
+                        }
+
+                        Mesh tempmesh = new Mesh();
+                        tempmesh.vertices = vertices;
+                        tempmesh.triangles = tris;
+                        combines.Add(new CombineInstance()
+                        {
+                            mesh = tempmesh,
+                            transform = Matrix4x4.identity
+                        });
+                    }
+                    string triggerName = ReadString(stream);
+                    RMTriggerBox box = new RMTriggerBox()
+                    {
+                        mesh = new Mesh(),
+                        name = triggerName
+                    };
+                    box.mesh.CombineMeshes(combines.ToArray(), false, true, false);
+                    combines.Clear();
+                    boxes.Add(box);
+                }
+            }
+
             RMeshData final = new RMeshData();
             final.visibleData = new MeshData(mesh, materials.ToArray());
             final.invisibleMesh = invisMesh;
+            final.triggerBoxes = boxes.ToArray();
             final.collisionMesh = new Mesh();
             for (int j = 0; j < mesh.subMeshCount; j++)
             {
