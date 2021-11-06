@@ -96,8 +96,6 @@ public class RMeshLoader : MonoBehaviour
                 tempmesh.uv = uv;
                 tempmesh.uv2 = uv2;
                 tempmesh.colors32 = colors;
-                tempmesh.RecalculateNormals();
-                tempmesh.RecalculateTangents();
                 combines.Add(new CombineInstance()
                 {
                     mesh = tempmesh,

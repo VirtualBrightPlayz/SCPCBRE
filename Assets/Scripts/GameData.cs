@@ -27,6 +27,10 @@ public class GameData : MonoBehaviour
         }
         string file = Path.GetFileName(filename);
         string dir = Path.GetDirectoryName(filename);
+        if (!Directory.Exists(dir))
+        {
+            return filename;
+        }
         foreach (string item in Directory.GetFiles(dir))
         {
             if (Path.GetFileName(item).ToLower() == file.ToLower())

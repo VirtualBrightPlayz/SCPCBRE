@@ -67,8 +67,10 @@
             o.Smoothness = _Glossiness;
             o.Alpha = c.a;
             o.Normal = fixed3(0, 0, 1);
-            // o.Normal = n;
+            // o.Normal = normalize(n.xyz);
             fixed4 lm = tex2D(_AltTex, IN.uv2_AltTex);
+            // o.Emission = lerp(lm.rgb, c.rgb, 0.5);
+            // o.Emission = lerp(lm.rgb, lm.rgb * c.rgb, 0.2);
             o.Emission = lm.rgb * c.rgb;
         }
         ENDCG
