@@ -59,7 +59,7 @@
         {
             fixed3 n = UnpackNormal(tex2D(_BumpMap, IN.uv_BumpMap));
             IN.tangentViewDir = normalize(IN.tangentViewDir);
-            float height = n.z * -0.01;
+            float height = n.z * 0.01;
             IN.uv_MainTex.xy += IN.tangentViewDir.xy * height;
             fixed4 c = tex2D(_MainTex, IN.uv_MainTex) * _Color;
             o.Albedo = c.rgb;

@@ -24,6 +24,7 @@ public class LightEntity : MonoBehaviour
         src.color = color;
         flare = GetComponent<LensFlare>();
         flare.brightness = intensity;
+        flare.color = color;
         flare.flare = Resources.Load<Flare>("LightFlare");
     }
 
