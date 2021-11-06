@@ -4,6 +4,7 @@ using UnityEngine;
 [RequireComponent(typeof(LensFlare))]
 public class LightEntity : MonoBehaviour
 {
+    public RMeshData room;
     public Color color;
     public float range;
     public float intensity;

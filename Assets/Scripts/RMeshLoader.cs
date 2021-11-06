@@ -273,6 +273,7 @@ public class RMeshLoader : MonoBehaviour
                         entGo.transform.SetParent(final.transform);
                         entGo.transform.localPosition = new Vector3(temp1, temp2, temp3);
                         LightEntity li = entGo.AddComponent<LightEntity>();
+                        li.room = final;
                         li.type = LightType.Point;
                         li.range = ReadFloat(stream);
                         string[] strColor = ReadString(stream).Split(' ');
@@ -300,6 +301,7 @@ public class RMeshLoader : MonoBehaviour
                         entGo.transform.SetParent(final.transform);
                         entGo.transform.localPosition = new Vector3(temp1, temp2, temp3);
                         LightEntity li = entGo.AddComponent<LightEntity>();
+                        li.room = final;
                         li.type = LightType.Spot;
                         li.range = ReadFloat(stream);
                         string[] strColor = ReadString(stream).Split(' ');
@@ -333,6 +335,7 @@ public class RMeshLoader : MonoBehaviour
                         entGo.transform.SetParent(final.transform);
                         entGo.transform.localPosition = new Vector3(temp1, temp2, temp3);
                         SoundEntity se = entGo.AddComponent<SoundEntity>();
+                        se.room = final;
                         se.soundId = ReadInt(stream);
                         se.range = ReadFloat(stream) * 2f;
                         se.RefreshData();
@@ -364,21 +367,33 @@ public class RMeshLoader : MonoBehaviour
                         }
                     }
                     break;
-                    case "model": // TODO
+                    case "model":
                     {
-                        ReadString(stream);
-                        //
-                        ReadFloat(stream);
-                        ReadFloat(stream);
-                        ReadFloat(stream);
-                        //
-                        ReadFloat(stream);
-                        ReadFloat(stream);
-                        ReadFloat(stream);
-                        //
-                        ReadFloat(stream);
-                        ReadFloat(stream);
-                        ReadFloat(stream);
+                        string file = ReadString(stream);
+                        MeshData model = LoadModel(file);
+
+                        float temp1 = ReadFloat(stream);
+                        float temp2 = ReadFloat(stream);
+                        float temp3 = ReadFloat(stream);
+
+                        GameObject entGo = new GameObject(temp1s);
+                        entGo.transform.SetParent(final.transform);
+                        entGo.transform.localPosition = new Vector3(temp1, temp2, temp3);
+                        ModelEntity mdl = entGo.AddComponent<ModelEntity>();
+                        mdl.room = final;
+                        mdl.visibleData = model;
+
+                        temp1 = ReadFloat(stream);
+                        temp2 = ReadFloat(stream);
+                        temp3 = ReadFloat(stream);
+                        entGo.transform.localEulerAngles = new Vector3(temp1, temp2, temp3);
+
+                        temp1 = ReadFloat(stream);
+                        temp2 = ReadFloat(stream);
+                        temp3 = ReadFloat(stream);
+                        entGo.transform.localScale = new Vector3(temp1, temp2, temp3);
+
+                        mdl.RefreshData();
                     }
                     break;
                     default:
@@ -394,6 +409,88 @@ public class RMeshLoader : MonoBehaviour
             final.RefreshData();
             return final;
         }
+    }
+
+    public static MeshData LoadModel(string file)
+    {
+        string path = GameData.GetFileNameIgnoreCase(Path.Combine(GameData.instance.propsDir, file));
+        Assimp.AssimpContext ctx = new Assimp.AssimpContext();
+        Assimp.Scene scene = ctx.ImportFile(path, Assimp.PostProcessSteps.GlobalScale);
+        List<int> indices = new List<int>();
+        List<Vector3> vertices = new List<Vector3>();
+        List<Vector3> normals = new List<Vector3>();
+        List<Vector2> uvs = new List<Vector2>();
+        int vertexOffset = 0;
+        foreach (Assimp.Mesh item in scene.Meshes)
+        {
+            List<Assimp.Vector3D> verts = item.Vertices;
+            List<Assimp.Vector3D> norms = item.HasNormals ? item.Normals : null;
+            List<Assimp.Vector3D> uv = item.HasTextureCoords(0) ? item.TextureCoordinateChannels[0] : null;
+            for (int i = 0; i < verts.Count; i++)
+            {
+                vertices.Add(ToVector3(verts[i]));
+                if (norms != null)
+                    normals.Add(ToVector3(norms[i]));
+                if (uv != null)
+                    uvs.Add(ToVector3(uv[i]));
+            }
+
+            List<Assimp.Face> faces = item.Faces;
+            for (int i = 0; i < faces.Count; i++)
+            {
+                Assimp.Face face = faces[i];
+
+                if (face.IndexCount != 3)
+                {
+                    indices.Add(0);
+                    indices.Add(0);
+                    indices.Add(0);
+                    continue;
+                }
+
+                indices.Add(face.Indices[0] + vertexOffset);
+                indices.Add(face.Indices[1] + vertexOffset);
+                indices.Add(face.Indices[2] + vertexOffset);
+            }
+
+            vertexOffset += verts.Count;
+        }
+        Mesh mesh = new Mesh();
+        mesh.name = Path.GetFileName(file);
+        mesh.vertices = vertices.ToArray();
+        mesh.normals = normals.ToArray();
+        mesh.uv = uvs.ToArray();
+        mesh.SetIndices(indices, MeshTopology.Triangles, 0);
+        mesh.RecalculateNormals();
+        mesh.RecalculateTangents();
+
+        List<Material> materials = new List<Material>();
+        if (scene.HasMaterials)
+        {
+            foreach (Assimp.Material item in scene.Materials)
+            {
+                materials.Add(LoadMaterial(path, item));
+            }
+        }
+        MeshData data = new MeshData(mesh, materials.ToArray());
+        return data;
+    }
+
+    public static Vector3 ToVector3(Assimp.Vector3D vector)
+    {
+        return new Vector3(vector.X, vector.Y, vector.Z);
+    }
+
+    public static Material LoadMaterial(string basePath, Assimp.Material material)
+    {
+        string path = Path.GetDirectoryName(basePath);
+        string diffuse = GameData.GetFileNameIgnoreCase(Path.Combine(path, material.HasTextureDiffuse ? material.TextureDiffuse.FilePath : string.Empty));
+        string bump = GameData.GetFileNameIgnoreCase(Path.Combine(path, material.HasTextureNormal ? material.TextureNormal.FilePath : string.Empty));
+        Material mat = new Material(Resources.Load<Material>("ModelMaterial"));
+        mat.SetTexture("_MainTex", LoadTexture(diffuse));
+        mat.SetTexture("_BumpMap", LoadTexture(bump));
+        mat.name = Path.GetFileNameWithoutExtension(diffuse);
+        return mat;
     }
 
     public static Material LoadMaterial(string[] tex)

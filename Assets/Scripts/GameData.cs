@@ -12,6 +12,7 @@ public class GameData : MonoBehaviour
     public string gameDir;
     public string gfxDir => Path.Combine(gameDir, "GFX");
     public string mapDir => Path.Combine(gfxDir, "map");
+    public string propsDir => Path.Combine(mapDir, "Props");
     public string dataDir => Path.Combine(gameDir, "Data");
     public string materialFile => Path.Combine(dataDir, "materials.ini");
     public string roomsFile => Path.Combine(dataDir, "rooms.ini");

@@ -3,6 +3,7 @@ using UnityEngine;
 [RequireComponent(typeof(AudioSource))]
 public class SoundEntity : MonoBehaviour
 {
+    public RMeshData room;
     public int soundId;
     public float range;
 
