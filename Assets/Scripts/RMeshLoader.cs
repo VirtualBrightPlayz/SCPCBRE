@@ -337,7 +337,7 @@ public class RMeshLoader : MonoBehaviour
                         SoundEntity se = entGo.AddComponent<SoundEntity>();
                         se.room = final;
                         se.soundId = ReadInt(stream);
-                        se.range = ReadFloat(stream) * 2f;
+                        se.range = ReadFloat(stream);
                         se.RefreshData();
 
                         if (entGo.transform.localPosition == Vector3.zero)

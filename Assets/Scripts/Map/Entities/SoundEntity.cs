@@ -14,8 +14,8 @@ public class SoundEntity : MonoBehaviour
         src.loop = true;
         src.spatialBlend = 1f;
         src.rolloffMode = AudioRolloffMode.Linear;
-        src.minDistance = 0.25f * range;
-        src.maxDistance = range;
+        src.minDistance = 0.75f * range;
+        src.maxDistance = range * 3f;
         src.clip = GameData.instance.roomAmbientAudio[soundId];
         src.Stop();
         src.Play();
