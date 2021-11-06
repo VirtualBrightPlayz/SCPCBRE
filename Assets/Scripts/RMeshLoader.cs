@@ -415,7 +415,7 @@ public class RMeshLoader : MonoBehaviour
     {
         string path = GameData.GetFileNameIgnoreCase(Path.Combine(GameData.instance.propsDir, file));
         Assimp.AssimpContext ctx = new Assimp.AssimpContext();
-        Assimp.Scene scene = ctx.ImportFile(path, Assimp.PostProcessSteps.GlobalScale);
+        Assimp.Scene scene = ctx.ImportFile(path);
         List<int> indices = new List<int>();
         List<Vector3> vertices = new List<Vector3>();
         List<Vector3> normals = new List<Vector3>();
