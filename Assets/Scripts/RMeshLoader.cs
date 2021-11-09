@@ -222,11 +222,14 @@ public class RMeshLoader : MonoBehaviour
                     subMeshIndex = j
                 });
             }
-            combines.Add(new CombineInstance()
+            if (invisMesh.vertices.Length > 0)
             {
-                mesh = invisMesh,
-                transform = Matrix4x4.identity
-            });
+                combines.Add(new CombineInstance()
+                {
+                    mesh = invisMesh,
+                    transform = Matrix4x4.identity
+                });
+            }
             final.collisionMesh.CombineMeshes(combines.ToArray(), false, true, false);
 
             // entities

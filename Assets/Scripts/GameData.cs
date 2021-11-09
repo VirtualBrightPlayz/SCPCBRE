@@ -164,7 +164,6 @@ public class GameData : MonoBehaviour
                 string key = item.Keys["mesh path"].Replace("\\", "/");
                 RMeshData rmesh = await AssetCache.LoadRoomMesh(GetFileNameIgnoreCase(Path.Combine(gameDir, key)), token);
                 rmesh.gameObject.SetActive(false);
-                Debug.Log(rmesh.name);
                 await UniTask.Delay(100, true);
             }
             i++;
