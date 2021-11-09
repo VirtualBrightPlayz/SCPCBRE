@@ -3,6 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 public class RMeshLoader : MonoBehaviour
@@ -10,8 +12,9 @@ public class RMeshLoader : MonoBehaviour
     public const float Scale = 0.01f;
     public const int MaxRoomEmitters = 8;
 
-    public static RMeshData LoadRMesh(string filename)
+    public static async UniTask<RMeshData> LoadRMesh(string filename, CancellationTokenSource token)
     {
+        filename = GameData.GetFileNameIgnoreCase(filename);
         using (FileStream stream = File.Open(filename, FileMode.Open))
         {
             bool hasTriggerBox = false;
@@ -44,7 +47,7 @@ public class RMeshLoader : MonoBehaviour
                     }
                 }
 
-                Material mat = LoadMaterial(tex);
+                Material mat = await LoadMaterial(tex, token);
                 materials.Add(mat);
 
                 // verts
@@ -368,7 +371,7 @@ public class RMeshLoader : MonoBehaviour
                     case "model":
                     {
                         string file = ReadString(stream);
-                        MeshData model = LoadModel(file);
+                        MeshData model = await AssetCache.LoadModel(file, token);
 
                         float temp1 = ReadFloat(stream);
                         float temp2 = ReadFloat(stream);
@@ -409,129 +412,14 @@ public class RMeshLoader : MonoBehaviour
         }
     }
 
-    public static MeshData LoadModel(string file)
-    {
-        string path = GameData.GetFileNameIgnoreCase(Path.Combine(GameData.instance.propsDir, file));
-        Assimp.AssimpContext ctx = new Assimp.AssimpContext();
-        Assimp.Scene scene = ctx.ImportFile(path);
-        List<int> indices = new List<int>();
-        List<Vector3> vertices = new List<Vector3>();
-        List<Vector3> normals = new List<Vector3>();
-        List<Vector2> uvs = new List<Vector2>();
-        int vertexOffset = 0;
-        foreach (Assimp.Mesh item in scene.Meshes)
-        {
-            List<Assimp.Vector3D> verts = item.Vertices;
-            List<Assimp.Vector3D> norms = item.HasNormals ? item.Normals : null;
-            List<Assimp.Vector3D> uv = item.HasTextureCoords(0) ? item.TextureCoordinateChannels[0] : null;
-            for (int i = 0; i < verts.Count; i++)
-            {
-                vertices.Add(ToVector3(verts[i]));
-                if (norms != null)
-                    normals.Add(ToVector3(norms[i]));
-                if (uv != null)
-                    uvs.Add(ToVector3(uv[i]));
-            }
-
-            List<Assimp.Face> faces = item.Faces;
-            for (int i = 0; i < faces.Count; i++)
-            {
-                Assimp.Face face = faces[i];
-
-                if (face.IndexCount != 3)
-                {
-                    indices.Add(0);
-                    indices.Add(0);
-                    indices.Add(0);
-                    continue;
-                }
-
-                indices.Add(face.Indices[0] + vertexOffset);
-                indices.Add(face.Indices[1] + vertexOffset);
-                indices.Add(face.Indices[2] + vertexOffset);
-            }
-
-            vertexOffset += verts.Count;
-        }
-        Mesh mesh = new Mesh();
-        mesh.name = Path.GetFileName(file);
-        mesh.vertices = vertices.ToArray();
-        mesh.normals = normals.ToArray();
-        mesh.uv = uvs.ToArray();
-        mesh.SetIndices(indices, MeshTopology.Triangles, 0);
-        mesh.RecalculateNormals();
-        mesh.RecalculateTangents();
-
-        List<Material> materials = new List<Material>();
-        if (scene.HasMaterials)
-        {
-            foreach (Assimp.Material item in scene.Materials)
-            {
-                materials.Add(LoadMaterial(path, item));
-            }
-        }
-        MeshData data = new MeshData(mesh, materials.ToArray());
-        return data;
-    }
-
-    public static Vector3 ToVector3(Assimp.Vector3D vector)
-    {
-        return new Vector3(vector.X, vector.Y, vector.Z);
-    }
-
-    public static Material LoadMaterial(string basePath, Assimp.Material material)
-    {
-        string path = Path.GetDirectoryName(basePath);
-        string diffuse = GameData.GetFileNameIgnoreCase(Path.Combine(path, material.HasTextureDiffuse ? material.TextureDiffuse.FilePath : string.Empty));
-        string bump = GameData.GetFileNameIgnoreCase(Path.Combine(path, material.HasTextureNormal ? material.TextureNormal.FilePath : string.Empty));
-        Material mat = new Material(Resources.Load<Material>("ModelMaterial"));
-        mat.SetTexture("_MainTex", LoadTexture(diffuse));
-        mat.SetTexture("_BumpMap", LoadTexture(bump));
-        mat.name = Path.GetFileNameWithoutExtension(diffuse);
-        return mat;
-    }
-
-    public static Material LoadMaterial(string[] tex)
+    public static async UniTask<Material> LoadMaterial(string[] tex, CancellationTokenSource token)
     {
         Material mat = new Material(Resources.Load<Material>("RoomMaterial"));
-        mat.SetTexture("_MainTex", LoadTexture(tex[1]));
-        mat.SetTexture("_BumpMap", LoadTextureBump(tex[1]));
-        mat.SetTexture("_AltTex", LoadTexture(tex[0]));
+        mat.SetTexture("_MainTex", await AssetCache.LoadTexture(tex[1], token));
+        mat.SetTexture("_BumpMap", await AssetCache.LoadTextureBump(tex[1], token));
+        mat.SetTexture("_AltTex", await AssetCache.LoadTexture(tex[0], token));
         mat.name = Path.GetFileNameWithoutExtension(tex[1]);
         return mat;
-    }
-
-    public static Texture2D LoadTexture(string path)
-    {
-        path = GameData.GetFileNameIgnoreCase(path);
-        if (File.Exists(path))
-        {
-            Texture2D tex = new Texture2D(1, 1);
-            if (tex.LoadImage(File.ReadAllBytes(path)))
-            {
-                return tex;
-            }
-        }
-        return null;
-    }
-
-    public static Texture2D LoadTextureBump(string path)
-    {
-        path = GameData.GetFileNameIgnoreCase(path);
-        if (GameData.instance.bumpMaterials.ContainsKey(Path.GetFileName(path)))
-        {
-            string pathbump = Path.Combine(GameData.instance.gameDir, GameData.instance.bumpMaterials[Path.GetFileName(path)]);
-            pathbump = GameData.GetFileNameIgnoreCase(pathbump);
-            if (File.Exists(pathbump))
-            {
-                Texture2D tex = new Texture2D(1, 1);
-                if (tex.LoadImage(File.ReadAllBytes(pathbump)))
-                {
-                    return tex;
-                }
-            }
-        }
-        return null;
     }
 
     public static string ReadString(Stream stream)

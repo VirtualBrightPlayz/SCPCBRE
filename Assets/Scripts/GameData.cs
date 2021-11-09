@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using IniParser;
 using IniParser.Model;
 using UnityEngine;
@@ -54,7 +56,19 @@ public class GameData : MonoBehaviour
     IEnumerator Start()
     {
         yield return LoadMaterials();
-        yield return LoadRooms();
+        #if UNITY_EDITOR
+        CancellationTokenSource cts = new CancellationTokenSource();
+        UnityEditor.EditorApplication.playModeStateChanged += (state) =>
+        {
+            if (state == UnityEditor.PlayModeStateChange.ExitingPlayMode)
+            {
+                cts.Cancel();
+            }
+        };
+        #else
+        CancellationTokenSource cts = default;
+        #endif
+        yield return LoadRooms(cts);
     }
 
     public IEnumerator LoadOptions()
@@ -120,10 +134,10 @@ public class GameData : MonoBehaviour
         yield break;
     }
 
-    public IEnumerator LoadRooms()
+    public async UniTask LoadRooms(CancellationTokenSource token = default)
     {
         LoadingScreen.instance.percent = -1;
-        yield return null;
+        await UniTask.DelayFrame(1);
         FileIniDataParser parser = new FileIniDataParser();
         IniData roomsData = parser.ReadFile(roomsFile);
         int i = 0;
@@ -136,22 +150,22 @@ public class GameData : MonoBehaviour
                 {
                     int ke = int.Parse(key.KeyName.Replace("ambience", ""));
                     UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip($"file://{GetFileNameIgnoreCase(Path.Combine(gameDir, key.Value))}", AudioType.UNKNOWN);
-                    yield return www.SendWebRequest();
+                    await www.SendWebRequest().WithCancellation(token.Token);
                     AudioClip clip = DownloadHandlerAudioClip.GetContent(www);
                     roomAmbientAudio.Add(ke, clip);
                 }
             }
             else
             {
-                string key = item.Keys["mesh path"];
-                RMeshData rmesh = RMeshLoader.LoadRMesh(GetFileNameIgnoreCase(Path.Combine(gameDir, key)));
+                string key = item.Keys["mesh path"].Replace("\\", "/");
+                RMeshData rmesh = await AssetCache.LoadRoomMesh(GetFileNameIgnoreCase(Path.Combine(gameDir, key)), token);
                 rmesh.gameObject.SetActive(false);
                 Debug.Log(rmesh.name);
-                yield return new WaitForSecondsRealtime(0.1f);
+                await UniTask.Delay(100, true);
             }
             i++;
         }
-        yield return null;
+        await UniTask.DelayFrame(1);
         LoadingScreen.instance.percent = 100;
     }
 }

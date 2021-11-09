@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 705507994}
-  m_IndirectSpecularColor: {r: 0.18028352, g: 0.22571376, b: 0.3069224, a: 1}
+  m_IndirectSpecularColor: {r: 0.18028334, g: 0.22571343, b: 0.30692208, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -316,6 +316,7 @@ GameObject:
   - component: {fileID: 1756503255}
   - component: {fileID: 1756503254}
   - component: {fileID: 1756503256}
+  - component: {fileID: 1756503257}
   m_Layer: 0
   m_Name: GameData
   m_TagString: Untagged
@@ -335,7 +336,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f94ec999db3af167883272a09bebd8c1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameDir: D:\Games\scpcb-v.1.3.11
+  gameDir: /home/brianzulch/Documents/SCPCB
 --- !u!4 &1756503255
 Transform:
   m_ObjectHideFlags: 0
@@ -375,3 +376,15 @@ MonoBehaviour:
   percent: 0
   font: {fileID: 12800000, guid: c7231e6aff6f45a418ba58a93214c6f2, type: 3}
   textIndex: 0
+--- !u!114 &1756503257
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1756503253}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9685819b4e1642d0a970b59d5be4ff9b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
