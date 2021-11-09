@@ -68,7 +68,7 @@ public class GameData : MonoBehaviour
         #else
         CancellationTokenSource cts = default;
         #endif
-        yield return LoadRooms(cts);
+        yield return LoadRooms(cts).ToCoroutine();
     }
 
     public IEnumerator LoadOptions()
@@ -126,7 +126,7 @@ public class GameData : MonoBehaviour
         IniData materialData = parser.ReadFile(materialFile);
         foreach (SectionData item in materialData.Sections)
         {
-            if (item.Keys.ContainsKey("bump"))
+            if (item.Keys.ContainsKey("bump") && !bumpMaterials.ContainsKey(item.SectionName))
             {
                 bumpMaterials.Add(item.SectionName, item.Keys["bump"]);
             }
@@ -149,6 +149,10 @@ public class GameData : MonoBehaviour
                 foreach (var key in item.Keys)
                 {
                     int ke = int.Parse(key.KeyName.Replace("ambience", ""));
+                    if (roomAmbientAudio.ContainsKey(ke))
+                    {
+                        continue;
+                    }
                     UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip($"file://{GetFileNameIgnoreCase(Path.Combine(gameDir, key.Value))}", AudioType.UNKNOWN);
                     await www.SendWebRequest().WithCancellation(token.Token);
                     AudioClip clip = DownloadHandlerAudioClip.GetContent(www);
