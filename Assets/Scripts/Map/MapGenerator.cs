@@ -146,7 +146,7 @@ public class MapGenerator : MonoBehaviour
             {
                 Vector3 pos = new Vector3(j, 0f, k);
                 if (MapTemp[j, k] >= 1)
-                    Debug.DrawLine(pos, pos + Vector3.up, Color.red, 10000f);
+                    Debug.DrawLine(pos, pos + Vector3.up, Color.red, 1f);
             }
         }
 
