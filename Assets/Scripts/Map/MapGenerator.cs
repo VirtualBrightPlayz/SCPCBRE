@@ -574,7 +574,13 @@ public class MapGenerator : MonoBehaviour
             {
                 if (MapTemp[x, y] == 255)
                 {
-                    GameObject r = await CreateRoom(GetZone(y), RoomType.ROOM2, x, 0, y, "checkpoint2", rng, token);
+                    string chkpt = "checkpoint1";
+                    if (y+1 == Transitions[0])
+                    {
+                        chkpt = "checkpoint2";
+                    }
+                    GameObject r = await CreateRoom(GetZone(y), RoomType.ROOM2, x, 0, y, chkpt, rng, token);
+                    r.transform.localEulerAngles = new Vector3(0f, 180f, 0f);
                     // checkpoint
                 }
                 else if (MapTemp[x, y] > 0)
