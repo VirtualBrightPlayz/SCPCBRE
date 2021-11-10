@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using IniParser;
+using IniParser.Model;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -18,6 +20,67 @@ public class AssetCache : MonoBehaviour
         instance = this;
     }
 
+    private static string Shape(MapGenerator.RoomType type)
+    {
+        switch (type)
+        {
+            case MapGenerator.RoomType.ROOM1:
+                return "1";
+            case MapGenerator.RoomType.ROOM2:
+                return "2";
+            case MapGenerator.RoomType.ROOM2C:
+                return "2C";
+            case MapGenerator.RoomType.ROOM3:
+                return "3";
+            case MapGenerator.RoomType.ROOM4:
+                return "4";
+            default:
+                return string.Empty;
+        }
+    }
+
+    public static async UniTask<RMeshData> LoadRoom(string name, MapGenerator.RoomType type, int zone, System.Random rng, CancellationTokenSource token)
+    {
+        FileIniDataParser parser = new FileIniDataParser();
+        IniData roomsData = parser.ReadFile(GameData.instance.roomsFile);
+        List<string> names = new List<string>();
+        foreach (var item in roomsData.Sections)
+        {
+            bool inzone = false;
+            foreach (var key in item.Keys)
+            {
+                if (key.KeyName.StartsWith("zone") && key.Value == zone.ToString())
+                {
+                    inzone = true;
+                    break;
+                }
+            }
+            if (item.Keys.ContainsKey("mesh path") && item.Keys.ContainsKey("shape") && item.Keys.ContainsKey("commonness") && inzone)
+            {
+                string key = item.Keys["mesh path"].Replace("\\", "/");
+                string shape = item.Keys["shape"];
+                if (shape.ToUpper() == Shape(type))
+                {
+                    for (int i = 0; i < int.Parse(item.Keys["commonness"]); i++)
+                    {
+                        names.Add(item.SectionName);
+                    }
+                }
+            }
+        }
+        if (string.IsNullOrEmpty(name) && names.Count > 0)
+        {
+            name = names[rng.Next(0, names.Count)];
+        }
+        if (string.IsNullOrEmpty(name) || !roomsData.Sections.ContainsSection(name))
+        {
+            Debug.Log(type);
+            Debug.Log(zone);
+            return null;
+        }
+        return await LoadRoomMesh(Path.Combine(GameData.instance.gameDir, roomsData[name]["mesh path"].Replace("\\", "/")), token);
+    }
+
     public static async UniTask<RMeshData> LoadRoomMesh(string path, CancellationTokenSource token)
     {
         string key = Path.GetFileName(path).ToLower();
@@ -26,6 +89,8 @@ public class AssetCache : MonoBehaviour
             return instance.rooms[key];
         }
         RMeshData data = await RMeshLoader.LoadRMesh(path, token);
+        data.gameObject.SetActive(false);
+        DontDestroyOnLoad(data.gameObject);
         instance.rooms.Add(key, data);
         return data;
     }

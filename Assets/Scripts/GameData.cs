@@ -69,6 +69,7 @@ public class GameData : MonoBehaviour
         CancellationTokenSource cts = default;
         #endif
         yield return LoadRooms(cts).ToCoroutine();
+        yield return FindObjectOfType<MapGenerator>().CreateMap(cts).ToCoroutine();
     }
 
     public IEnumerator LoadOptions()
@@ -159,13 +160,13 @@ public class GameData : MonoBehaviour
                     roomAmbientAudio.Add(ke, clip);
                 }
             }
-            else
+            /*else
             {
                 string key = item.Keys["mesh path"].Replace("\\", "/");
                 RMeshData rmesh = await AssetCache.LoadRoomMesh(GetFileNameIgnoreCase(Path.Combine(gameDir, key)), token);
                 rmesh.gameObject.SetActive(false);
                 await UniTask.Delay(100, true);
-            }
+            }*/
             i++;
         }
         await UniTask.DelayFrame(1);
