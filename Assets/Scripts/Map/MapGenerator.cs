@@ -566,12 +566,17 @@ public class MapGenerator : MonoBehaviour
 
     public async UniTask SpawnMap(int[,] MapTemp, string[,] MapRoom, int MaxRooms, System.Random rng, CancellationTokenSource token)
     {
+        LoadingScreen.instance.percent = -1;
+        await UniTask.DelayFrame(1);
         int[] MapRoomID = new int[(int)RoomType.ROOM4 + 1];
         string[,] MapName = new string[MapTemp.GetLength(0), MapTemp.GetLength(1)];
+        int i = 0;
         for (int y = 1; y < MapTemp.GetLength(1) - 1; y++)
         {
             for (int x = 1; x < MapTemp.GetLength(0) - 1; x++)
             {
+                i++;
+                LoadingScreen.instance.percent = (int)((float)i / MapTemp.Length * 100f);
                 if (MapTemp[x, y] == 255)
                 {
                     string chkpt = "checkpoint1";
@@ -742,6 +747,8 @@ public class MapGenerator : MonoBehaviour
                 }
             }
         }
+        await UniTask.DelayFrame(1);
+        LoadingScreen.instance.percent = 100;
     }
 
     public async UniTask<GameObject> CreateRoom(int zone, RoomType type, int x, int y, int z, string room_name, System.Random rng, CancellationTokenSource token)
