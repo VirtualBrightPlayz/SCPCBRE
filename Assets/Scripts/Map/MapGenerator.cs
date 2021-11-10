@@ -515,7 +515,7 @@ public class MapGenerator : MonoBehaviour
         min_pos = Room2Amount[0];
         max_pos = Room2Amount[0]+Room2Amount[1]-1;
 
-        MapRoom[(int)RoomType.ROOM2, Mathf.FloorToInt(0.1f*Room2Amount[1])] = "room2nuke";
+        MapRoom[(int)RoomType.ROOM2, Room2Amount[0]+Mathf.FloorToInt(0.1f*Room2Amount[1])] = "room2nuke";
         SetRoom(ref MapRoom, "room2tunnel", RoomType.ROOM2, Room2Amount[0]+Mathf.FloorToInt(0.25f*Room2Amount[1]), min_pos, max_pos);
         SetRoom(ref MapRoom, "room049", RoomType.ROOM2, Room2Amount[0]+Mathf.FloorToInt(0.4f*Room2Amount[1]), min_pos, max_pos);
         SetRoom(ref MapRoom, "room2shaft", RoomType.ROOM2, Room2Amount[0]+Mathf.FloorToInt(0.6f*Room2Amount[1]), min_pos, max_pos);
