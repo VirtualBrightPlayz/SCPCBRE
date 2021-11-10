@@ -754,9 +754,9 @@ public class MapGenerator : MonoBehaviour
     public async UniTask<GameObject> CreateRoom(int zone, RoomType type, int x, int y, int z, string room_name, System.Random rng, CancellationTokenSource token)
     {
         RMeshData room = await AssetCache.LoadRoom(room_name, type, zone, rng, token);
-        GameObject go = Instantiate(room.gameObject);
+        GameObject go = Instantiate(room.gameObject, transform);
         go.SetActive(true);
-        go.transform.position = new Vector3(x * 20.48f, y * 20.48f, z * 20.48f);
+        go.transform.localPosition = new Vector3(x * 20.48f, y * 20.48f, z * 20.48f);
         return go;
     }
 

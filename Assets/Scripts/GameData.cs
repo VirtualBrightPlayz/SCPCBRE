@@ -137,14 +137,10 @@ public class GameData : MonoBehaviour
 
     public async UniTask LoadRooms(CancellationTokenSource token = default)
     {
-        LoadingScreen.instance.percent = -1;
-        await UniTask.DelayFrame(1);
         FileIniDataParser parser = new FileIniDataParser();
         IniData roomsData = parser.ReadFile(roomsFile);
-        int i = 0;
         foreach (SectionData item in roomsData.Sections)
         {
-            LoadingScreen.instance.percent = (int)((float)i / roomsData.Sections.Count * 100f);
             if (item.SectionName == "room ambience")
             {
                 foreach (var key in item.Keys)
@@ -160,16 +156,6 @@ public class GameData : MonoBehaviour
                     roomAmbientAudio.Add(ke, clip);
                 }
             }
-            /*else
-            {
-                string key = item.Keys["mesh path"].Replace("\\", "/");
-                RMeshData rmesh = await AssetCache.LoadRoomMesh(GetFileNameIgnoreCase(Path.Combine(gameDir, key)), token);
-                rmesh.gameObject.SetActive(false);
-                await UniTask.Delay(100, true);
-            }*/
-            i++;
         }
-        await UniTask.DelayFrame(1);
-        LoadingScreen.instance.percent = 100;
     }
 }
