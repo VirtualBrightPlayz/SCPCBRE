@@ -17,17 +17,11 @@ public class MapGenerator : MonoBehaviour
         ROOM3,
         ROOM4,
     }
-    public enum ZoneType : int
-    {
-        LCZ,
-        HCZ,
-        EZ
-    }
 
     public int GetZone(int y)
     {
         int zone = 1;
-        if (y >= Transitions[1] && y <= Transitions[0])
+        if (y >= Transitions[1] && y < Transitions[0])
         {
             zone = 2;
         }
@@ -283,6 +277,7 @@ public class MapGenerator : MonoBehaviour
             }
         }
 
+        // room4 and room2c
         for (int i = 0; i < 3; i++)
         {
             int zone = 1;
@@ -469,8 +464,6 @@ public class MapGenerator : MonoBehaviour
             }
         }
 
-        // TODO: more mapgen
-
         int MaxRooms = 55 * MapSize.x / 20;
         MaxRooms = Mathf.Max(MaxRooms, Room1Amount[0]+Room1Amount[1]+Room1Amount[2]+1);
         MaxRooms = Mathf.Max(MaxRooms, Room2Amount[0]+Room2Amount[1]+Room2Amount[2]+1);
@@ -586,7 +579,6 @@ public class MapGenerator : MonoBehaviour
                     }
                     GameObject r = await CreateRoom(GetZone(y), RoomType.ROOM2, x, 0, y, chkpt, rng, token);
                     r.transform.localEulerAngles = new Vector3(0f, 180f, 0f);
-                    // checkpoint
                 }
                 else if (MapTemp[x, y] > 0)
                 {
@@ -764,13 +756,13 @@ public class MapGenerator : MonoBehaviour
     {
         if (max_pos < min_pos)
         {
-            Debug.Log($"Can't place {room_name}");
+            Debug.LogWarning($"Can't place {room_name}");
             return false;
         }
         
         bool looped = false;
         bool can_place = true;
-        while (string.IsNullOrEmpty(MapRoom[(int)type, pos]))
+        while (!string.IsNullOrEmpty(MapRoom[(int)type, pos]))
         {
             pos++;
             if (pos > max_pos)
@@ -794,6 +786,7 @@ public class MapGenerator : MonoBehaviour
         }
         else
         {
+            Debug.LogWarning($"Can't place {room_name}");
             return false;
         }
     }

@@ -152,7 +152,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Transitions: 0c00000008000000
   RandomSeed: 0
-  MapSize: {x: 19, y: 19}
+  MapSize: {x: 18, y: 18}
 --- !u!4 &564817875
 Transform:
   m_ObjectHideFlags: 0
