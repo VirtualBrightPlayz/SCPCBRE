@@ -150,7 +150,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5898b79c8d8c85748a64053f98139b10, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Transitions: 0d00000007000000
+  Transitions: 0c00000008000000
   RandomSeed: 0
   MapSize: {x: 19, y: 19}
 --- !u!4 &564817875
