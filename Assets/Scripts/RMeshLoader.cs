@@ -417,8 +417,27 @@ public class RMeshLoader : MonoBehaviour
 
     public static async UniTask<Material> LoadMaterial(string[] tex, CancellationTokenSource token)
     {
-        Material mat = new Material(Resources.Load<Material>("RoomMaterial"));
-        mat.SetTexture("_MainTex", await AssetCache.LoadTexture(tex[1], token));
+        Material mat;
+        Texture2D mainTex = await AssetCache.LoadTexture(tex[1], token);
+        mainTex.alphaIsTransparency = true;
+        bool clear = false;
+        foreach (var col in mainTex.GetPixels(0, 0, mainTex.width, mainTex.height))
+        {
+            if (col.a < 1f)
+            {
+                clear = true;
+                break;
+            }
+        }
+        if (clear)
+        {
+            mat = new Material(Resources.Load<Material>("RoomMaterialAlpha"));
+        }
+        else
+        {
+            mat = new Material(Resources.Load<Material>("RoomMaterial"));
+        }
+        mat.SetTexture("_MainTex", mainTex);
         mat.SetTexture("_BumpMap", await AssetCache.LoadTextureBump(tex[1], token));
         mat.SetTexture("_AltTex", await AssetCache.LoadTexture(tex[0], token));
         mat.name = Path.GetFileNameWithoutExtension(tex[1]);
