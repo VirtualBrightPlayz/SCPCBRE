@@ -1,7 +1,7 @@
 # SCPCBRE
 SCP - Containment Breach ported to a new engine.
 
-# No Longer Maintained.
+# No Longer Maintained. See https://github.com/VirtualBrightPlayz/engine-sharp
 
 Unity 2019.4.26f1
 
